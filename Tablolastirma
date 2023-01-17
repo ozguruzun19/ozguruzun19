@@ -1,0 +1,62 @@
+"""
+Created on Mon Jan 9 22:42:16 2023
+
+@author: salihozgurulasuzun
+"""
+import numpy as np 
+import matplotlib.pyplot as plt
+import pandas as pd 
+from sklearn.preprocessing import MinMaxScaler
+from itertools import combinations
+from sklearn.cluster import KMeans
+
+veri=pd.read_csv("Final-data.csv")
+ms = MinMaxScaler()
+veri=ms.fit_transform(veri)
+k=int(input("Kac kume istiyorsunuz?"))
+kmeans = KMeans(n_clusters=k, random_state=0) 
+kmeans.fit(veri)
+results = kmeans.predict(veri)
+clustercenters=kmeans.cluster_centers_
+labels= kmeans.labels_
+wcss=0
+wcsslist=np.zeros(k)
+for satir in range(214):
+    for kumetipi in range(k):
+        for sutun in range(9):
+            if(labels[satir]==kumetipi):
+                wcss=wcss+pow((veri[satir][sutun]-clustercenters[kumetipi][sutun]),2)
+                wcsslist[kumetipi]=wcsslist[kumetipi]+pow((veri[satir][sutun]-clustercenters[kumetipi][sutun]),2)
+mean=np.zeros(9)
+tss=0
+for sutun in range(9):
+    for satir in range(214):
+        mean[sutun]=mean[sutun]+veri[satir][sutun]
+    mean[sutun]=mean[sutun]/214
+for satir in range(214):
+    for sutun in range(9):
+        tss=tss + pow((veri[satir][sutun]-mean[sutun]),2)
+bcss=tss-wcss
+start=True
+for satir in range(k):
+    for ikincisatir in range(satir+1,k):
+        value=0
+        for sutun in range(9):
+            value = value+ pow((clustercenters[satir][sutun]-clustercenters[ikincisatir][sutun]),2)
+        if(start==True):
+            minvalue=value
+            start=False
+        elif (minvalue>value):
+            minvalue=value
+dunnindex=minvalue/wcsslist.max()
+ilkdegisken=int(input("İlk degiskeni girin:"))
+ikincidegisken=int(input("\nİkinci degiskeni girin:"))
+plt.scatter(veri[:, ilkdegisken], veri[:, ikincidegisken], c=results, s=50, cmap='plasma')
+plt.show()
+file= open("sonuc.txt","w+")
+for x in range(214):
+    file.write("Kayit {}: Kume {}\n".format(x+1,labels[x]))
+for x in range(k):
+    file.write("Kume {} Kayit Sayisi:{}\n".format(x+1,np.count_nonzero(labels == x)))
+file.write("WCSS:{}\nBCSS:{}\nDUNNINDEX:{}".format(wcss,bcss,dunnindex))
+file.close()
